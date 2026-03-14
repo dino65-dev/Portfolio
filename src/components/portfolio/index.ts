@@ -1,7 +1,0 @@
-export { Nav } from './Nav'
-export { Hero } from './Hero'
-export { Projects } from './Projects'
-export { About } from './About'
-export { Blog } from './Blog'
-export { Contact } from './Contact'
-export { Footer } from './Footer'
