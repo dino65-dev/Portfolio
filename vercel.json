@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npx tsr generate && FOR_SITES=true DEPLOY_TARGET=vercel npx vite build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "framework": null,
+  "outputDirectory": ".output"
+}
