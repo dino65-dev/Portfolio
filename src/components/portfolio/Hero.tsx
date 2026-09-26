@@ -11,6 +11,7 @@ interface HeroProps {
     avatarUrl?: string | null
     location?: string | null
     linkedinUrl?: string | null
+    resumeUrl?: string | null
   } | null
 }
 
@@ -30,6 +31,10 @@ export function Hero({ profile }: HeroProps) {
     'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800&q=80'
   const location = profile?.location || ''
   const linkedinUrl = profile?.linkedinUrl
+  const resumeUrl = profile?.resumeUrl &&
+    !/[?&]X-Amz-(Expires|Signature)=/i.test(profile.resumeUrl)
+    ? profile.resumeUrl
+    : null
 
   // Split name into words for stacked display
   const nameWords = name.split(' ')
@@ -169,6 +174,18 @@ export function Hero({ profile }: HeroProps) {
             Scroll for work
             <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
           </motion.button>
+
+          {resumeUrl && (
+            <a
+              href={resumeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium transition-colors hover:text-[#8B5CF6] underline underline-offset-4"
+              style={{ color: '#8B5CF6' }}
+            >
+              Résumé
+            </a>
+          )}
 
           {/* Secondary — text link (like "LinkedIn, if you must") */}
           {linkedinUrl ? (

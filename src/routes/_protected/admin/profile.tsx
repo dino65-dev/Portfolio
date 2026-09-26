@@ -19,6 +19,7 @@ import {
   getProfileSettingsFn,
   saveProfileSettingsFn,
   uploadProfileImageFn,
+  uploadResumeFn,
 } from '@/server/functions/portfolio'
 import { Toaster } from 'sonner'
 
@@ -35,10 +36,12 @@ function ProfileEditor() {
   const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isUploadingResume, setIsUploadingResume] = useState(false)
   const [activeTab, setActiveTab] = useState<
     'basic' | 'hero' | 'about' | 'social'
   >('basic')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const resumeInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     displayName: profile?.displayName || '',
@@ -138,6 +141,34 @@ function ProfileEditor() {
     }
   }
 
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.type !== 'application/pdf' || file.size > 3 * 1024 * 1024) {
+      toast.error('Please select a PDF smaller than 3 MB')
+      return
+    }
+
+    setIsUploadingResume(true)
+    try {
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error('Failed to read PDF'))
+        reader.readAsDataURL(file)
+      })
+      const result = await uploadResumeFn({ data: { base64Data } })
+      setFormData((prev) => ({ ...prev, resumeUrl: result.fileUrl }))
+      toast.success('PDF uploaded. Save changes to publish the new link.')
+    } catch (error) {
+      console.error('Resume upload error:', error)
+      toast.error('Failed to upload PDF. Please try again.')
+    } finally {
+      setIsUploadingResume(false)
+      e.target.value = ''
+    }
+  }
+
   const addInterest = () => {
     if (
       newInterest.trim() &&
@@ -177,6 +208,10 @@ function ProfileEditor() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (/[?&]X-Amz-(Expires|Signature)=/i.test(formData.resumeUrl)) {
+      toast.error('Temporary résumé links expire. Upload the PDF instead.')
+      return
+    }
     setIsSaving(true)
 
     try {
@@ -698,6 +733,22 @@ function ProfileEditor() {
                   className="w-full px-4 py-3 bg-[#FAFAF8] dark:bg-[#0F1419] border border-[#E8E8E6] dark:border-[#2A2F3C] rounded-lg text-[#1A1F2C] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/50 text-sm sm:text-base"
                   placeholder="https://example.com/resume.pdf"
                 />
+                <input
+                  ref={resumeInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={handleResumeUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => resumeInputRef.current?.click()}
+                  disabled={isUploadingResume}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E8E8E6] dark:border-[#2A2F3C] text-sm disabled:opacity-50"
+                >
+                  <Upload size={16} />
+                  {isUploadingResume ? 'Uploading PDF...' : 'Upload résumé PDF'}
+                </button>
               </div>
             </div>
           </motion.div>

@@ -745,3 +745,34 @@ export const uploadProfileImageFn = createServerFn({ method: 'POST' })
       throw new Error('Failed to upload image')
     }
   })
+
+const uploadResumeSchema = z.object({
+  base64Data: z.string().max(4 * 1024 * 1024 + 100),
+})
+
+export const uploadResumeFn = createServerFn({ method: 'POST' })
+  .inputValidator(uploadResumeSchema)
+  .handler(async ({ data }) => {
+    const { currentUser } = await authMiddleware()
+    if (!currentUser) throw new Error('Unauthorized')
+
+    const base64 = data.base64Data.replace(/^data:application\/pdf;base64,/, '')
+    const buffer = Buffer.from(base64, 'base64')
+    if (
+      buffer.length === 0 ||
+      buffer.length > 3 * 1024 * 1024 ||
+      buffer.subarray(0, 5).toString() !== '%PDF-'
+    ) {
+      throw new Error('Please upload a PDF smaller than 3 MB')
+    }
+
+    const { fileStorage } = await import('../lib/storage')
+    const storage = await fileStorage()
+    const file = await storage.create(
+      currentUser.$id,
+      buffer,
+      `resumes/${crypto.randomUUID()}.pdf`,
+      'application/pdf',
+    )
+    return { fileUrl: file.url }
+  })
